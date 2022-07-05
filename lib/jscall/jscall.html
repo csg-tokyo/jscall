@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Jscall</title>
+  <link rel="icon" type="image/png" sizes="32x32" href="./favicon.ico">
+  <link rel="apple-touch-icon" href="./apple-touch-icon.png">
+
+  <script type="module" src="./main.mjs"></script>
+  <script type="module" src="./browser.mjs"></script>
+  <script type="module">
+    import * as Ruby from './main.mjs'
+    import { HttpStream, Jscall } from './browser.mjs'
+    globalThis.Ruby = Ruby
+    globalThis.Jscall = Jscall
+    Ruby.start(new HttpStream(), false)
+  </script>
+</head>
+
+<body>
+</body>
+</html>
