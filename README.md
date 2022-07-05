@@ -35,7 +35,7 @@ js_obj.baz       # 9
 The `foo` method is executed in JavaScript.
 Since `bar` is not a function, its value is returned to Ruby as it is.
 
-Setting a object property to a given value is also
+Setting an object property to a given value is also
 allowed.  The expression `js_obj.baz = 9` above sets
 the object property `baz` to 9.
 
@@ -56,7 +56,7 @@ with the given argument.  In this case,
 the `foo` function is executed with the argument `7`.
 
 When a Ruby object is passed to a JavaScript function/method,
-it can call a method on the passed Ruby object.
+you can call a method on the passed Ruby object.
 
 ```
 Jscall.exec <<CODE
@@ -109,7 +109,7 @@ links `mystyle.css` in the current directory.
 - `Jscall.dom.print(msg)`
 
 This adds a `p` element to the DOM tree.
-
+Its inner text is the character string passed as `msg`.
 
 ## Variable scope
 
@@ -151,7 +151,7 @@ fs = Jscall.dyn_import('fs')
 ```
 
 This executes dynamic importing in JavaScript.
-For node.js, the file name of the imported module should be a full path name.  For a web browser, the root directory is a current working directory.  So `Jscall.dyn_import('/mine.mjs')` loads the file `./mine.mjs`.
+For node.js, the file name of the imported module should be a full path name.  For a web browser, the root directory is the current working directory.  So `Jscall.dyn_import('/mine.mjs')` loads the file `./mine.mjs`.
 
 `Jscall.dyn_import` takes the second argument.  If it is given,
 a global variable in JavaScript is bound to the loaded module.
