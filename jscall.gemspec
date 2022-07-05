@@ -11,6 +11,7 @@ Gem::Specification.new do |spec|
   spec.summary = "a library for calling JavaScript functions"
   spec.description = "a library for executing JavaScript code on node.js or a web browser"
   spec.homepage = "https://github.com/csg-tokyo/jscall"
+  spec.license  = "MIT"
   spec.required_ruby_version = ">= 2.6.0"
 
 #  spec.metadata["allowed_push_host"] = "TODO: Set to your gem server 'https://example.com'"
