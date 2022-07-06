@@ -8,6 +8,7 @@ module Jscall
     WEBrick::HTTPUtils::DefaultMimeTypes['mjs'] ||= "application/javascript"
 
     class Dom
+        # see Jscall class in browser.mjs
         def method_missing(name, *args)
             Jscall.__getpipe__.funcall(nil, "Jscall.#{name}", args)
         end
