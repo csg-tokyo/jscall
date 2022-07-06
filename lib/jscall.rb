@@ -83,6 +83,16 @@ module Jscall
             @id = id
         end
 
+        # override Object#then
+        def then(*args)
+            method_missing('then', *args)
+        end
+
+        # override Object#send
+        def send(name, *args)
+            Jscall.__getpipe__.funcall(self, name, args)
+        end
+
         def method_missing(name, *args)
             Jscall.__getpipe__.funcall(self, name, args)
         end

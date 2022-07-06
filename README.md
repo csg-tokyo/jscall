@@ -95,6 +95,24 @@ longer used.  To reclaim them immediately, call:
 Jscall.scavenge_references
 ```
 
+As mentioned above, a remote reference is a proxy object.  In Ruby,
+even a proxy object provides a number of methods inherited from `Object` class,
+such as `clone`, `to_s`, and `inspect`.  A call to such a method is not
+delegated to the corresponding JavaScript object.  To invoke such a method
+on a JavaScript object, call `send` on its proxy object.
+For example,
+
+```
+js_obj = Jscall.exec '({ to_s: (x, y) => x + y })'
+puts js_obj.to_s(3, 4)            # error
+puts js_obj.send('to_s', 3, 4)    # 7
+```
+
+The `send` method invokes the JavaScript method with the name specified
+by the first argument.  The remaining arguments passed to `send` are passed
+to that JavaScript method.
+
+
 ## DOM manipulation
 
 When JavaScript code is run on a browser, some utility methods
@@ -110,6 +128,15 @@ links `mystyle.css` in the current directory.
 
 This adds a `p` element to the DOM tree.
 Its inner text is the character string passed as `msg`.
+
+- `Jscall.dom.append_to_body(html_source`
+
+This inserts the given `html_source` at the end of the `body` element.
+It is a shorthand for
+
+```
+Jscall.document.body.insertAdjacentHTML('beforeend', html_source)`.
+```
 
 ## Variable scope
 
@@ -183,6 +210,7 @@ import * as "Foo" from "./foo.mjs"
 import * as "Bar" from "./bar.mjs"
 ```
 
+The above call to `Jscall.config` also specifies that
 `'--use-strict'` is passed to node.js as a command line argument.
 
 `module_names:` and `options:` are optional arguments to `Jscall.config`.
