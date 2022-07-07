@@ -81,6 +81,35 @@ CODE
     assert_equal 17, obj.foo(10)
   end
 
+  def test_pass_ruby_function
+    f = -> (x) { x + 1 }
+    Jscall.exec(<<CODE
+      async function get_ruby_function(f) {
+        return await f(7)
+      }
+CODE
+    )
+    assert_equal 8, Jscall.get_ruby_function(f)
+  end
+
+  def test_pass_promise
+    Jscall.exec(<<CODE
+      function make_promise() {
+        return { pro: Promise.resolve(7) }    // A promise object is passed as it is only
+      }                                       // when it is the value of an object property.
+CODE
+    )
+    obj = Jscall.make_promise
+    pro = obj.pro
+    result = 0
+
+    pro.then(->(r) { result = r })
+    assert_equal 7, result
+
+    pro.send('then', ->(r) { result = r })
+    assert_equal 7, result
+  end
+
   def test_get_js_property
     Jscall.exec 'a = { foo: { a: 3, b(x) { return x + 1 }}}'
     assert_equal 3, Jscall.a.foo.a
@@ -110,6 +139,14 @@ CODE
 CODE
     )
     assert_equal 113, Jscall.call_ruby_method(Foo.new)
+  end
+
+  def test_send_to_s
+    obj = Jscall.exec '({ to_s: (i) => i + 1 })'
+    assert_equal 7, obj.send('to_s', 6)
+    assert_raises do
+      obj.to_s(6)
+    end
   end
 
   # call a Ruby method in JS without async/await.

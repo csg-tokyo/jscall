@@ -3,5 +3,5 @@
 # Copyright (C) 2022- Shigeru Chiba.  All rights reserved.
 
 module Jscall
-  VERSION = "1.0.1"
+  VERSION = "1.1.0"
 end
