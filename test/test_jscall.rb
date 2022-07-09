@@ -81,6 +81,23 @@ CODE
     assert_equal 17, obj.foo(10)
   end
 
+  def test_pass_hash
+    obj = { a: 3, b: 70 }
+    Jscall.exec(<<CODE)
+      function foo(h) { return h.a + h.b }
+CODE
+    assert_equal 73, Jscall.foo(obj)
+  end
+
+  def test_pass_js_map
+    Jscall.exec(<<CODE)
+      function bar(x) { const m = new Map(); m.set('a', x); return m }
+CODE
+    h = Jscall.bar(7)
+    assert h.is_a? Hash
+    assert_equal 7, h['a']
+end
+
   def test_pass_ruby_function
     f = -> (x) { x + 1 }
     Jscall.exec(<<CODE

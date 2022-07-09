@@ -151,6 +151,7 @@ module Jscall
         Param_object = 1
         Param_local_object = 2
         Param_error = 3
+        Param_hash = 4
 
         @@node_cmd = 'node'
 
@@ -194,6 +195,10 @@ module Jscall
                 obj
             elsif obj.is_a?(Array)
                 [Param_array, obj.map {|e| encode_obj(e)}]
+            elsif obj.is_a?(Hash)
+                hash2 = {}
+                obj.each {|key, value| hash2[key] = encode_obj(value) }
+                [Param_hash, hash2]
             elsif obj.is_a?(RemoteRef)
                 [Param_local_object, obj.id]
             else
@@ -209,11 +214,15 @@ module Jscall
             if obj.is_a?(Numeric) || obj.is_a?(String) || obj == true || obj == false || obj == nil
                 obj
             elsif obj.is_a?(Array) && obj.size == 2
-                if (obj[0] == Param_array)
+                if obj[0] == Param_array
                     obj[1].map {|e| decode_obj(e)}
-                elsif (obj[0] == Param_object)
+                elsif obj[0] == Param_hash
+                    hash = {}
+                    obj[1].each {|key, value| hash[key] = decode_obj(value)}
+                    hash
+                elsif obj[0] == Param_object
                     @imported.import(obj[1])
-                elsif (obj[0] == Param_local_object)
+                elsif obj[0] == Param_local_object
                     @exported.find(obj[1])
                 else  # if Param_error
                     JavaScriptError.new(obj[1])
