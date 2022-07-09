@@ -19,10 +19,14 @@ This returns `2`.  The argument passed to `Jscall.exec` can be
 multipe lines.  It is executed as source code written in JavaScript.
 
 `Jscall.exec` returns a resulting value.  Numbers, character strings (and symbols), boolean values, and `nil` (and `null`)
-are copied when passing between Ruby and JavaScript.  An array is also shallow-copied.
+are copied when passing between Ruby and JavaScript.  An array is shallow-copied.
 Other objects are not copied.  When they are passed, a remote reference is created at the destination.
+When a `Map` object is returned from JavaScript to Ruby, it is also
+shallow-copied but into a `Hash` object in Ruby.
 
-A remote reference is a proxy object.  A method call on a remote reference invokes a method on the corresponding object on the remote site.  For example,
+A remote reference is a local reference to a proxy object.
+A method call on a remote reference invokes a method on the corresponding
+object on the remote site.  For example,
 
 ```
 js_obj = Jscall.exec '({ foo: (x) => x + 1, bar: 7 })'
@@ -39,6 +43,25 @@ Setting an object property to a given value is also
 allowed.  The expression `js_obj.baz = 9` above sets
 the object property `baz` to 9.
 
+An argument to a JavaScript method is copied from Ruby to
+JavaScript unless it is an object.  When an argument is a Ruby object,
+a proxy object is created in JavaScript.  The rule is the same as the
+rule for returning a value from JavaScript to Ruby.  A primitive
+value is copied but an object is not.  An array is shallow-copied.
+
+A `Hash` object in Ruby is also shallow-copied into JavaScript but a normal
+object is created in JavaScript.  Recall that a JavaScript object is
+regarded as an associative array, or a hash table as in Ruby.
+For example, in Ruby,
+
+```
+obj = { a: 2, b: 3 }
+```
+
+when this ruby object is passed to JavaScript as an argument,
+a normal object `{ a: 2, b: 3 }` is created as its copy in JavaScript
+and passed to a JavaScript method.
+
 To call a JavaScript function from Ruby, call a mehtod on `Jscall`.
 For example,
 
@@ -54,6 +77,8 @@ Jscall.foo(7)    # 8
 `Jscall.foo(7)` invokes the JavaScript function with the name following `Jscall.`
 with the given argument.  In this case,
 the `foo` function is executed with the argument `7`.
+Arguments and a return value are passed to/from a function
+as they are passed to/from a method.
 
 When a Ruby object is passed to a JavaScript function/method,
 you can call a method on the passed Ruby object.
@@ -84,9 +109,18 @@ CODE
 Jscall.foo()
 ```
 
-`Jscall.foo()` returns the result of evaluating `RUBY_VERSION`
-in Ruby.
+`Jscall.foo()` returns the result of evaluating given Ruby code
+`RUBY_VERSION` in Ruby.
 Don't forget to `await` a call to `Ruby.exec`.
+
+### Remote references
+
+A remote reference is implemented by a local reference to a proxy
+object representing the remote object that the remote reference refers to.
+When a proxy object is passed as an argument or a return value
+from Ruby to JavaScript (or vice versa), the corresponding JavaScript
+(or Ruby) object is passed to the destination.  In other words,
+a remote reference passed is converted back to a local reference.
 
 Remote references will be automatically reclaimed when they are no
 longer used.  To reclaim them immediately, call:
@@ -95,7 +129,8 @@ longer used.  To reclaim them immediately, call:
 Jscall.scavenge_references
 ```
 
-As mentioned above, a remote reference is a proxy object.  In Ruby,
+As mentioned above, a remote reference is a local reference
+to a proxy object.  In Ruby,
 even a proxy object provides a number of methods inherited from `Object` class,
 such as `clone`, `to_s`, and `inspect`.  A call to such a method is not
 delegated to the corresponding JavaScript object.  To invoke such a method
@@ -129,13 +164,13 @@ links `mystyle.css` in the current directory.
 This adds a `p` element to the DOM tree.
 Its inner text is the character string passed as `msg`.
 
-- `Jscall.dom.append_to_body(html_source`
+- `Jscall.dom.append_to_body(html_source)`
 
 This inserts the given `html_source` at the end of the `body` element.
 It is a shorthand for
 
 ```
-Jscall.document.body.insertAdjacentHTML('beforeend', html_source)`.
+Jscall.document.body.insertAdjacentHTML('beforeend', html_source)
 ```
 
 ## Variable scope
