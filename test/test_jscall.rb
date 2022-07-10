@@ -112,19 +112,16 @@ CODE
   def test_pass_promise
     Jscall.exec(<<CODE
       function make_promise() {
-        return { pro: Promise.resolve(7) }    // A promise object is passed as it is only
-      }                                       // when it is the value of an object property.
+        return { pro: Promise.resolve({a: 7}) }
+      }
 CODE
     )
     obj = Jscall.make_promise
-    pro = obj.pro
+    pro = obj.pro   # pro is a remote ref to {a: 7}
     result = 0
 
     pro.then(->(r) { result = r })
-    assert_equal 7, result
-
-    pro.send('then', ->(r) { result = r })
-    assert_equal 7, result
+    assert_equal 7, result.a
   end
 
   def test_get_js_property

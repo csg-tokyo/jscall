@@ -287,6 +287,12 @@ Jscall launches a web browser by the command like the following:
 open http://localhost:10082/jscall/jscall.html
 ```
 
+Jscall generates a verbose error message if its debug level is more than 0.
+
+```
+Jscall.debug = 1
+```
+
 ## Installation
 
 Add this line to your application's Gemfile:

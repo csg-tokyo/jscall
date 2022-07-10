@@ -9,6 +9,16 @@ require_relative "jscall/version"
 require_relative "jscall/browser"
 
 module Jscall
+    @@debug = 0
+
+    # Current debug level (>= 0)
+    def self.debug() @@debug end
+
+    # Sets the current debug level.
+    def self.debug=(level)
+        @@debug = level
+    end
+
     TableSize = 100
 
     class JavaScriptError < RuntimeError
@@ -85,7 +95,13 @@ module Jscall
 
         # override Object#then
         def then(*args)
-            method_missing('then', *args)
+            raise "Promise#then() in JavaScript is not supported" if Jscall.debug > 0
+            args[0].call(self)
+        end
+
+        # puts() calls this
+        def to_ary
+            ["#<RemoteRef @id=#{@id}>"]
         end
 
         # override Object#send
@@ -245,7 +261,11 @@ module Jscall
         def encode_eval_error(e)
             traces = e.backtrace
             location = if traces.size > 0 then traces[0] else '' end
-            encode_error(location + ' ' + e.to_s)
+            if Jscall.debug > 0
+                encode_error("\n#{e.full_message}")
+            else
+                encode_error(location + ' ' + e.to_s)
+            end
         end
 
         def scavenge
