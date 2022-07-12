@@ -261,24 +261,71 @@ prom.then(->(r) { puts r })   # 7
 
 ## Configuration
 
-To import JavaScript modules when node.js starts,
+Jscall supports several configuration options.
+Call `Jscall.config` with necessary options.
+
+### module_names:
+
+To import JavaScript modules when node.js or a web browser starts,
 
 ```
-Jscall.config(module_names: [["Foo", "./foo.mjs"], ["Bar", "./bar.mjs"]], options: "--use-strict")
+Jscall.config(module_names: [["Foo", "./js", "/lib/foo.mjs"], ["Bar", "./js", "/lib/bar.mjs"]])
 ```
 
-This specifies that `./foo.mjs` and `./bar.mjs` are impoted when node.js starts.
+This specifies that `./js/lib/foo.mjs` and `./js/lib/bar.mjs` are imported
+at the beginning.
 This is equivalent to the following import declarations:
 
 ```
-import * as "Foo" from "./foo.mjs"
-import * as "Bar" from "./bar.mjs"
+import * as "Foo" from "./js/lib/foo.mjs"
+import * as "Bar" from "./js/lib/bar.mjs"
 ```
 
-The above call to `Jscall.config` also specifies that
-`'--use-strict'` is passed to node.js as a command line argument.
+Note that each array element given to `module_names:` is
 
-`module_names:` and `options:` are optional arguments to `Jscall.config`.
+```
+[<module_name> <root> <path>]
+```
+
+`<path>` must start with `/`.  It is used as a part of the URL when a browser
+accesses a module.
+When importing a module for node.js, `<root>` and `<path>` are concatenated
+to form a full path name.
+
+`<path>` must not start with `/jscall` or `/cmd`.  They are reserved for
+internal use.
+
+### options:
+
+To specify a command line argument passed to node.js,
+
+```
+Jscall.config(options: '--use-strict')
+```
+
+This call specifies that
+`--use-strict` is passed as a command line argument.
+
+### browser: and port:
+
+When running JavaScript code on a web browser,
+
+```
+Jscall.config(browser: true, port: 10082)
+```
+
+Passing `true` for `browser:` switches the execution engine to a web browser.
+The default engine is node.js.
+To switch the engine back to node.js, pass `false` for `browser:`.
+Call `Jscall.close` to detach the current execution engine.
+A new enigine with a new configuration will be created.
+
+`port:` specifies the port number of an http server.  It is optional.
+The example above specifies that Ruby receives http requests
+sent to http://localhost:10082 from JavaScript on a web browser.
+
+
+### Other configurations
 
 To change the name of the node command,
 
@@ -287,21 +334,6 @@ Jscall::PipeToJs.node_command = "node.exe"
 ```
 
 The default command name is `"node"`.
-
-When running JavaScript code on a web browser,
-
-```
-Jscall.config(browser: true, options: {port: 10082})
-```
-
-`options:` is an optional argument.
-The example above specifies that Ruby receives http requests
-sent to http://localhost:10082 from JavaScript on a web browser.
-
-Passing `false` for `browser:` to `Jscall.config` switches
-the execution engine to node.js.
-Call `Jscall.close` to detach the current execution engine.
-A new enigine with a new configuration will be created.
 
 To change the command for launching a web browser,
 

@@ -5,6 +5,7 @@ require "test_helper"
 
 class TestJscall < Minitest::Test
   def setup
+    Jscall.config
     Jscall.config browser: false
   end
 
@@ -262,15 +263,22 @@ CODE
     assert get_exported_objects < nrefs + n
   end
 
+  def test_config_module
+    Jscall.config(module_names: [['Ecma', __dir__, '/js/ecma.mjs']])
+    Jscall.close
+    assert_equal 9, Jscall.exec('Ecma.foo(8)')
+    Jscall.config
+  end
+
   def test_dyn_load
-    mod = Jscall.dyn_import('../../test/ecma.mjs', 'mod')
+    mod = Jscall.dyn_import("#{__dir__}/js/ecma.mjs", 'mod')
     assert_equal 4, mod.foo(3)
     assert_equal 7, Jscall.exec('mod.foo(6)')
   end
 
   def test_require
     assert_equal 7,
-      Jscall.exec("const mod = require('./test/cjs.js'); mod(4)")
+      Jscall.exec("const mod = require('./test/js/cjs.js'); mod(4)")
   end
 
   class Simple
@@ -281,7 +289,7 @@ CODE
   end
 
   def test_scavange_references
-    Jscall.config(options: '--expose-gc')
+    Jscall.config(options: '--expose-gc', browser: false)
     Jscall.close
     Jscall.exec <<CODE
       class JSimple {
@@ -303,7 +311,7 @@ CODE
       Jscall.exec 'global.gc()'
     end
     Jscall.scavenge_references
-    Jscall.config(options: '')
+    Jscall.config()
   end
 
   def test_round_trip_time

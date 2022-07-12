@@ -24,11 +24,25 @@ module Jscall
     end
 
     class PipeToBrowser < PipeToJs
-        def startJS(module_names, options)
-            port = 10081
-            port = options[:port] if options.is_a?(Hash) && options.has_key?(:port)
-            @pipe = FetchServer.new(port)
+        def startJS(module_names, config)
+            urls = {}
+            module_names.each_index do |i|
+                mod = module_names[i]
+                urls[mod[2]] = mod
+            end
+            port = config[:port] || 10081
+            @pipe = FetchServer.new(port, urls)
             @pipe.open
+        end
+
+        def setup(config)
+            if config[:browser]
+                module_names = config[:module_names] || []
+                module_names.each_index do |i|
+                    mod = module_names[i]
+                    Jscall.dyn_import(mod[2], mod[0])
+                end
+            end
         end
 
         def close
@@ -59,7 +73,8 @@ module Jscall
             @@run_cmd = name
         end
 
-        def initialize(port)
+        def initialize(port, urls)
+            @url_map = urls
             @send_buffer = Thread::Queue.new
             @receive_buffer = Thread::Queue.new
             @server_running = false
@@ -97,10 +112,16 @@ module Jscall
         end
 
         def read_file(req, res)
-            if req.path.start_with?('/jscall/')
+            path = req.path
+            if path.start_with?('/jscall/')
                 root = "#{__dir__}/../"
             else
-                root = @server.config[:DocumentRoot]
+                value = @url_map[path]
+                if value.nil?
+                    root = @server.config[:DocumentRoot]
+                else
+                    root = value[1]
+                end
             end
             WEBrick::HTTPServlet::FileHandler.new(@server, root).service(req, res)
         end

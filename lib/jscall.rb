@@ -190,21 +190,33 @@ module Jscall
             @@node_cmd = cmd
         end
 
-        # do import * as 'module_names[i][0]' from 'module_names[i][1]' 
-        #
-        def initialize(module_names=[], options='')
-            startJS(module_names, options)
+        def initialize(config)
             @exported = Exported.new
             @imported = Imported.new
             @send_counter = 0
+            module_names = config[:module_names] || []
+            startJS(module_names, config)
         end
 
-        # module_names: an array of [module_name, module_file_name]
+        def setup(config)
+            # called just after executing new PipeToJs(config)
+        end
+
+        # Config options.
         #
-        def startJS(module_names, options)
+        # module_names: an array of [module_name, module_root, module_file_name]
+        #   For example,
+        #     [['Foo', '/home/jscall', '/lib/foo.mjs']]
+        #   this does
+        #     import * as Foo from "/home/jscall/lib/foo.mjs"
+        #
+        # options: options passed to node.js
+        #
+        def startJS(module_names, config)
+            options = config[:options] || ''
             script2 = ''
             module_names.each_index do |i|
-                script2 += "import * as m#{i + 2} from \"#{module_names[i][1]}\"; globalThis.#{module_names[i][0]} = m#{i + 2}; "
+                script2 += "import * as m#{i + 2} from \"#{module_names[i][1]}#{module_names[i][2]}\"; globalThis.#{module_names[i][0]} = m#{i + 2}; "
             end
             script2 += "import { createRequire } from \"node:module\"; globalThis.require = createRequire(\"file://#{Dir.pwd}/\");"
             script = "'import * as m1 from \"#{__dir__}/jscall/main.mjs\"; globalThis.Ruby = m1; #{script2}; Ruby.start(process.stdin, true)'"
@@ -352,13 +364,17 @@ module Jscall
     end
 
     @pipe = nil
-    @module_names = []
-    @options = ''
+    @configurations = {}
     @pipeToJsClass = PipeToJs
 
-    def self.config(module_names: [], options: '', browser: false)
-        @module_names = module_names
-        @options = options
+    #def self.config(module_names: [], options: '', browser: false)
+    def self.config(**kw)
+        if kw.nil? || kw == {}
+            @configurations = {}
+        else
+            @configurations = @configurations.merge!(kw)
+        end
+        browser = @configurations[:browser]
         @pipeToJsClass = if browser then PipeToBrowser else PipeToJs end
         nil
     end
@@ -396,7 +412,8 @@ module Jscall
 
     def self.__getpipe__
         if @pipe.nil?
-            @pipe = @pipeToJsClass.new(@module_names, @options)
+            @pipe = @pipeToJsClass.new(@configurations)
+            @pipe.setup(@configurations)
         end
         @pipe
     end
