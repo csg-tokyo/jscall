@@ -93,10 +93,13 @@ module Jscall
             @id = id
         end
 
+        def async
+            AsyncRemoteRef.new(@id)
+        end
+
         # override Object#then
         def then(*args)
-            raise "Promise#then() in JavaScript is not supported" if Jscall.debug > 0
-            args[0].call(self)
+            send('then', *args)
         end
 
         # puts() calls this
@@ -109,8 +112,18 @@ module Jscall
             Jscall.__getpipe__.funcall(self, name, args)
         end
 
+        def async_send(name, *args)
+            Jscall.__getpipe__.async_funcall(self, name, args)
+        end
+
         def method_missing(name, *args)
             Jscall.__getpipe__.funcall(self, name, args)
+        end
+    end
+
+    class AsyncRemoteRef < RemoteRef
+        def method_missing(name, *args)
+            Jscall.__getpipe__.async_funcall(self, name, args)
         end
     end
 
@@ -163,6 +176,8 @@ module Jscall
         CMD_EVAL = 1
         CMD_CALL = 2
         CMD_REPLY = 3
+        CMD_ASYNC = 4
+
         Param_array = 0
         Param_object = 1
         Param_local_object = 2
@@ -250,6 +265,11 @@ module Jscall
 
         def funcall(receiver, name, args)
             cmd = [CMD_CALL, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
+            send_command(cmd)
+        end
+
+        def async_funcall(receiver, name, args)
+            cmd = [CMD_ASYNC, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
             send_command(cmd)
         end
 

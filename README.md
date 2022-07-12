@@ -228,6 +228,36 @@ This is quite equivalent to the following JavaScript code:
 fs_module = await load('fs')
 ```
 
+## Promise
+
+If a program attempts to pass a `Promise` object from JavaScript to Ruby,
+it waits until the promise is fullfilled.  Then Jscall passes
+the value of that promise from JavaScript to Ruby instead of that
+promise itself (or a remote reference to that promise).  When that promise
+is rejected, an error object is passed to Ruby
+so that the error will be raised in Ruby.
+This design reflects the fact that an `async` function in JavaScript
+also returns a `Promise` object but this object must not be returned
+to Ruby as is when that `async` function is called from Ruby.
+Jscall cannot determine whether a promise should be passed as is to Ruby
+or its value must be passed to Ruby after the promise is fullfilled.
+
+When enforcing Jscall to pass a `Promise` object from JavaScript to Ruby,
+`.async` must be inserted between a receiver and a method name.
+
+```
+Jscall.exec(<<CODE)
+  function make_promise() {
+    return { a: Promise.resolve(7) }
+  }
+CODE
+
+obj = Jscall.make_promise
+result = obj.a                # 7
+prom = obj.async.a            # promise
+prom.then(->(r) { puts r })   # 7
+```
+
 
 ## Configuration
 

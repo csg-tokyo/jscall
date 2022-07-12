@@ -112,15 +112,17 @@ CODE
   def test_pass_promise
     Jscall.exec(<<CODE
       function make_promise() {
-        return { pro: Promise.resolve({a: 7}) }
+        return { prom: Promise.resolve({a: 7}) }
       }
 CODE
     )
     obj = Jscall.make_promise
-    pro = obj.pro   # pro is a remote ref to {a: 7}
-    result = 0
+    result = obj.prom
+    assert_equal 7, result.a
 
-    pro.then(->(r) { result = r })
+    result = nil
+    obj = Jscall.make_promise
+    obj.async.prom.then(->(r) { result = r })
     assert_equal 7, result.a
   end
 
