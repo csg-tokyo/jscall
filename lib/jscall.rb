@@ -122,6 +122,8 @@ module Jscall
     end
 
     class AsyncRemoteRef < RemoteRef
+        alias send async_send
+
         def method_missing(name, *args)
             Jscall.__getpipe__.async_funcall(self, name, args)
         end
