@@ -387,29 +387,10 @@ module Jscall
 
     Signal.trap(0) { self.close }  # close before termination
 
-    def self.exec(src)
-        __getpipe__.exec(src)
-    end
-
-    def self.dyn_import(name, var_name=nil)
-        __getpipe__.funcall(nil, 'Ruby.dyn_import', [name, var_name])
-    end
-
-    # name is a string object.
-    # Evaluating this string in JavaScript results in a JavaScript function.
-    #
-    def self.funcall(name, *args)
-        __getpipe__.funcall(nil, name, args)
-    end
-
     # reclaim unused remote references.
     #
     def self.scavenge_references
         __getpipe__.scavenge
-    end
-
-    def self.method_missing(name, *args)
-        __getpipe__.funcall(nil, name, args)
     end
 
     def self.__getpipe__
@@ -418,5 +399,52 @@ module Jscall
             @pipe.setup(@configurations)
         end
         @pipe
+    end
+
+    module Interface
+        def exec(src)
+            __getpipe__.exec(src)
+        end
+
+        # name is a string object.
+        # Evaluating this string in JavaScript results in a JavaScript function.
+        #
+        def funcall(name, *args)
+            __getpipe__.funcall(nil, name, args)
+        end
+
+        def async_funcall(name, *args)
+            __getpipe__.async_funcall(nil, name, args)
+        end
+
+        def dyn_import(name, var_name=nil)
+            funcall('Ruby.dyn_import', [name, var_name])
+        end
+
+        def method_missing(name, *args)
+            funcall(name, *args)
+        end
+    end
+
+    extend Interface
+
+    module AsyncInterface
+        include Interface
+
+        def exec(src)
+            raise NotImplementedError, "Jscall::AsyncInterface.#exec"
+        end
+
+        alias funcall async_funcall
+    end
+
+    def self.async
+        @async ||= Class.new do
+            def __getpipe__
+                Jscall.__getpipe__
+            end
+
+            include AsyncInterface
+        end.new
     end
 end
