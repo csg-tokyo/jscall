@@ -11,6 +11,9 @@ class TestJscall < Minitest::Test
   end
 
   def define_js_functions
+    return if @js_functions_are_defined
+    @js_functions_are_defined = true
+
     Jscall.exec <<~JS
         function isPromise(obj) {
             return obj instanceof Promise
@@ -31,7 +34,7 @@ class TestJscall < Minitest::Test
   end
 
   def test_exec
-    ## ## not implemented yet
+    ## ## Jscall.async.exec is not implemented yet
     ## p1 = Jscall.async.exec('Promise.resolve(58)')
     ## assert_equal 58, Jscall.join(p1)
   end
@@ -67,41 +70,50 @@ class TestJscall < Minitest::Test
 
   def test_promise_then
     p = Jscall.async.makePromise(99)
+    assert Jscall.isPromise(p)
     fulfilled = false
     q = p.async.then(proc do |x|
         fulfilled = true
         x + 1
     end)
-    r = Jscall.join(q)
-    assert Jscall.isPromise(p)
     assert Jscall.isPromise(q)
+    r = Jscall.join(q)
     assert fulfilled
     assert_equal 100, r
   end
 
   def test_promise_catch
+    ## Jscall.async.exec('Promise.reject("test")').catch(proc { |err| nil })  <- this cannot prevent Node.js from aborting
     Jscall.exec <<~JS
+        let reject     = undefined
         let fulfilled2 = false
         function getFulfilled2() {
             return fulfilled2
         }
         function makePromise2() {
-            new Promise((resolve, reject) => reject("test")).then((x) => {
+            return new Promise((res, rej) => {
+                reject = rej
+            }).then((x) => {
                 fulfilled2 = true
                 return x + 1
             })
+        }
+        function callReject(err) {
+            reject(err)
         }
     JS
     p = Jscall.async.makePromise2
     assert Jscall.isPromise(p)
     assert !Jscall.getFulfilled2
-    q = p.catch do |err|
+    q = p.async.catch(proc do |err|
         [err, 69]
-    end
+    end)
     assert Jscall.isPromise(q)
-    r = Jscall.join(q)
+    r = Jscall.callReject('test')
+    assert_nil r
+    s = Jscall.join(q)
     assert !Jscall.getFulfilled2
-    assert_equal ['test', 69], r
+    assert_equal ['test', 69], s
   end
 
   def test_resolve_remoteref
