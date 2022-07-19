@@ -178,7 +178,8 @@ module Jscall
         CMD_EVAL = 1
         CMD_CALL = 2
         CMD_REPLY = 3
-        CMD_ASYNC = 4
+        CMD_ASYNC_CALL = 4
+        CMD_ASYNC_EVAL = 5
 
         Param_array = 0
         Param_object = 1
@@ -283,12 +284,17 @@ module Jscall
         end
 
         def async_funcall(receiver, name, args)
-            cmd = [CMD_ASYNC, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
+            cmd = [CMD_ASYNC_CALL, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
             send_command(cmd)
         end
 
         def exec(src)
             cmd = [CMD_EVAL, src]
+            send_command(cmd)
+        end
+
+        def async_exec(src)
+            cmd = [CMD_ASYNC_EVAL, src]
             send_command(cmd)
         end
 
@@ -406,6 +412,10 @@ module Jscall
             __getpipe__.exec(src)
         end
 
+        def async_exec(src)
+            __getpipe__.async_exec(src)
+        end
+
         # name is a string object.
         # Evaluating this string in JavaScript results in a JavaScript function.
         #
@@ -431,10 +441,7 @@ module Jscall
     module AsyncInterface
         include Interface
 
-        def exec(src)
-            raise NotImplementedError, "Jscall::AsyncInterface.#exec"
-        end
-
+        alias exec async_exec
         alias funcall async_funcall
     end
 

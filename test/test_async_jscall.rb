@@ -34,9 +34,9 @@ class TestJscall < Minitest::Test
   end
 
   def test_exec
-    ## ## Jscall.async.exec is not implemented yet
-    ## p1 = Jscall.async.exec('Promise.resolve(58)')
-    ## assert_equal 58, Jscall.join(p1)
+    p1 = Jscall.async.exec('Promise.resolve(58)')
+    assert Jscall.isPromise(p1)
+    assert_equal 58, Jscall.join(p1)
   end
 
   def test_funcall
@@ -83,7 +83,7 @@ class TestJscall < Minitest::Test
   end
 
   def test_promise_catch
-    ## Jscall.async.exec('Promise.reject("test")').catch(proc { |err| nil })  <- this cannot prevent Node.js from aborting
+    ## Jscall.async.exec('Promise.reject("test")').catch(proc { |err| nil })  <- this .catch() cannot prevent Node.js from aborting
     Jscall.exec <<~JS
         let reject     = undefined
         let fulfilled2 = false
@@ -118,7 +118,8 @@ class TestJscall < Minitest::Test
 
   def test_resolve_remoteref
     obj = Object.new
-    p = Jscall.exec('({ call: (x) => Promise.resolve(x) })').async.call(obj)
+    p = Jscall.exec('({ call: (obj) => Promise.resolve(obj) })').async.call(obj)
+    assert Jscall.isPromise(p)
     r = Jscall.join(p)
     assert_equal obj, r
   end
