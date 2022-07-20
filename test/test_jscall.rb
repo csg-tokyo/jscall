@@ -97,7 +97,7 @@ CODE
     h = Jscall.bar(7)
     assert h.is_a? Hash
     assert_equal 7, h['a']
-end
+  end
 
   def test_pass_ruby_function
     f = -> (x) { x + 1 }
