@@ -10,7 +10,7 @@ class TestBrowser < TestJscall
     end
 
     def test_dyn_load
-        mod = Jscall.dyn_import('/test/ecma.mjs', 'mod')
+        mod = Jscall.dyn_import('/test/js/ecma.mjs', 'mod')
         assert_equal 4, mod.foo(3)
         assert_equal 7, Jscall.exec('mod.foo(6)')
     end

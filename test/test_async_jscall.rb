@@ -3,7 +3,7 @@
 require "benchmark"
 require "test_helper"
 
-class TestJscall < Minitest::Test
+class TestAsyncJscall < Minitest::Test
   def setup
     Jscall.config
     Jscall.config browser: false
