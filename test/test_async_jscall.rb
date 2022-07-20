@@ -123,4 +123,22 @@ class TestAsyncJscall < Minitest::Test
     r = Jscall.join(p)
     assert_equal obj, r
   end
+
+  def test_asynchronous_callback
+    Jscall.exec <<~JS
+      function asynchronous_callback(callback) {
+        for (let i = 0; i < 10; i++) {
+          setTimeout(((i) => () => callback(i))(i * i * i), 0)
+        }
+      }
+    JS
+    responses = []
+    Jscall.asynchronous_callback(proc do |i|
+      responses << i
+      nil
+    end)
+    sleep(0.01)
+    Jscall.exec("")
+    assert_equal [0, 1, 8, 27, 64, 125, 216, 343, 512, 729], responses
+  end
 end
