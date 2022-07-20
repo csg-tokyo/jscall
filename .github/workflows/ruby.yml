@@ -19,7 +19,7 @@ permissions:
 jobs:
   test:
 
-    runs-on: macosx-latest
+    runs-on: macos-latest
     strategy:
       matrix:
         ruby-version: ['2.7', '3.0']
