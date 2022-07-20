@@ -1,5 +1,7 @@
 # Jscall
 
+[![Ruby](https://github.com/csg-tokyo/jscall/actions/workflows/ruby.yml/badge.svg)](https://github.com/csg-tokyo/jscall/actions/workflows/ruby.yml)
+
 Jscall allows executing a program in JavaScript on node.js or a web browser.
 By default, node.js is used for the execution.
 To choose a web browser, call `Jscall.config`.
