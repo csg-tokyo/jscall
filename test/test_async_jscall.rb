@@ -124,21 +124,59 @@ class TestAsyncJscall < Minitest::Test
     assert_equal obj, r
   end
 
-  def test_asynchronous_callback
+  def test_asynchronous_call_from_js_to_ruby
     Jscall.exec <<~JS
+      let responses = []
       function asynchronous_callback(callback) {
-        for (let i = 0; i < 10; i++) {
-          setTimeout(((i) => () => callback(i))(i * i * i), 0)
+        for (let i = 6; i > 0; i--) {
+          setTimeout(((i) => async () => {
+            responses.push([i, await callback(i)])
+          })(i), 0)
         }
       }
+      function getResponses() {
+        return responses
+      }
     JS
-    responses = []
     Jscall.asynchronous_callback(proc do |i|
-      responses << i
-      nil
+      sleep(i * 0.001)
+      i ** 3
     end)
-    sleep(0.01)
-    Jscall.exec("")
-    assert_equal [0, 1, 8, 27, 64, 125, 216, 343, 512, 729], responses
+    sleep(0.01) until Jscall.getResponses.length == 6
+    puts "js->ruby: #{ Jscall.getResponses.inspect }"
+    Jscall.getResponses.each do |i, x|
+      assert_equal i ** 3, x
+    end
+  end
+
+  def test_asynchronous_callback_from_ruby_to_js
+    Jscall.exec <<~JS
+      let responses2 = []
+      function asynchronous_callback2(callback) {
+        for (let i = 6; i > 0; i--) {
+          setTimeout(((i) => async () => {
+            responses2.push([i, await callback(i)])
+          })(i), 0)
+        }
+      }
+      function getResponses2() {
+        return responses2
+      }
+      async function sleep(t) {
+        return new Promise((res) => setTimeout(() => res(undefined), t * 1000))
+      }
+      async function sleepAndReturnCubic(i) {
+        await sleep(i * 0.001)
+        return i ** 3
+      }
+    JS
+    Jscall.asynchronous_callback2(proc do |i|
+      Jscall.sleepAndReturnCubic(i)
+    end)
+    sleep(0.01) until Jscall.getResponses2.length == 6
+    puts "ruby->js: #{ Jscall.getResponses2.inspect }"
+    Jscall.getResponses2.each do |i, x|
+      assert_equal i ** 3, x
+    end
   end
 end
