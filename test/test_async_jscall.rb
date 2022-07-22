@@ -11,9 +11,6 @@ class TestAsyncJscall < Minitest::Test
   end
 
   def define_js_functions
-    return if @js_functions_are_defined
-    @js_functions_are_defined = true
-
     Jscall.exec <<~JS
         function isPromise(obj) {
             return obj instanceof Promise
