@@ -279,22 +279,22 @@ module Jscall
         end
 
         def funcall(receiver, name, args)
-            cmd = [CMD_CALL, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
+            cmd = [CMD_CALL, nil, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
             send_command(cmd)
         end
 
         def async_funcall(receiver, name, args)
-            cmd = [CMD_ASYNC_CALL, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
+            cmd = [CMD_ASYNC_CALL, nil, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
             send_command(cmd)
         end
 
         def exec(src)
-            cmd = [CMD_EVAL, src]
+            cmd = [CMD_EVAL, nil, src]
             send_command(cmd)
         end
 
         def async_exec(src)
-            cmd = [CMD_ASYNC_EVAL, src]
+            cmd = [CMD_ASYNC_EVAL, nil, src]
             send_command(cmd)
         end
 
@@ -322,7 +322,7 @@ module Jscall
                 dead_refs = @imported.dead_references()
                 if (dead_refs.length > 0)
                     cmd2 = cmd.dup
-                    cmd2[4] = dead_refs
+                    cmd2[5] = dead_refs
                     return cmd2
                 end
             end
@@ -334,13 +334,14 @@ module Jscall
             @pipe.puts(json_data)
             reply_data = @pipe.gets
             reply = JSON.parse(reply_data || '[]')
-            if reply.length > 4
-                reply[4].each {|idx| @exported.remove(idx) }
+            if reply.length > 5
+                reply[5].each {|idx| @exported.remove(idx) }
             end
             if @pipe.closed?
                 raise RuntimeError.new("connection closed: #{reply}")
             elsif reply[0] == CMD_REPLY
-                result = decode_obj(reply[1])
+                ## message_id = reply[1]  ## it must be nil
+                result = decode_obj(reply[2])
                 if result.is_a?(JavaScriptError)
                     raise result
                 else
@@ -348,23 +349,23 @@ module Jscall
                 end
             elsif reply[0] == CMD_EVAL
                 begin
-                    result = Object::TOPLEVEL_BINDING.eval(reply[1])
+                    result = Object::TOPLEVEL_BINDING.eval(reply[2])
                     encoded = encode_obj(result)
                 rescue => e
                     encoded = encode_eval_error(e)
                 end
-                send_command([CMD_REPLY, encoded])
+                send_command([CMD_REPLY, reply[1], encoded])
             elsif reply[0] == CMD_CALL
                 begin
-                    receiver = decode_obj(reply[1])
-                    name = reply[2]
-                    args = reply[3].map {|e| decode_obj(e)}
+                    receiver = decode_obj(reply[2])
+                    name = reply[3]
+                    args = reply[4].map {|e| decode_obj(e)}
                     result = receiver.public_send(name, *args)
                     encoded = encode_obj(result)
                 rescue => e
                     encoded = encode_eval_error(e)
                 end
-                send_command([CMD_REPLY, encoded])
+                send_command([CMD_REPLY, reply[1], encoded])
             else
                 raise RuntimeError.new("bad reply: #{reply}")
             end
