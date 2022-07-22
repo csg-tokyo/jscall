@@ -197,6 +197,7 @@ module Jscall
             @exported = Exported.new
             @imported = Imported.new
             @send_counter = 0
+            @num_generated_ids = 0
             module_names = config[:module_names] || []
             startJS(module_names, config)
         end
@@ -278,23 +279,27 @@ module Jscall
             end
         end
 
+        def fresh_id
+            @num_generated_ids += 1
+        end
+
         def funcall(receiver, name, args)
-            cmd = [CMD_CALL, nil, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
+            cmd = [CMD_CALL, fresh_id, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
             send_command(cmd)
         end
 
         def async_funcall(receiver, name, args)
-            cmd = [CMD_ASYNC_CALL, nil, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
+            cmd = [CMD_ASYNC_CALL, fresh_id, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
             send_command(cmd)
         end
 
         def exec(src)
-            cmd = [CMD_EVAL, nil, src]
+            cmd = [CMD_EVAL, fresh_id, src]
             send_command(cmd)
         end
 
         def async_exec(src)
-            cmd = [CMD_ASYNC_EVAL, nil, src]
+            cmd = [CMD_ASYNC_EVAL, fresh_id, src]
             send_command(cmd)
         end
 
