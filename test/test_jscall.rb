@@ -166,17 +166,26 @@ CODE
     end
   end
 
+  class Bar
+    attr_reader :x
+    def initialize(x)
+      @x = x
+    end
+    def bar(x)
+      Bar.new(@x + x)
+    end
+  end
   # call a Ruby method in JS without async/await.
   # an exception must be raised.
   def test_call_ruby_method_without_await
     Jscall.exec(<<CODE
       function call_ruby_method(p) {
-        return p.foo(10) + 100
+        return p.bar(20).baz()
       }
 CODE
     )
     assert_raises do
-      Jscall.call_ruby_method(Foo.new)
+      Jscall.call_ruby_method(Bar.new(10))
     end
     Jscall.close    # needs to close to recover from the errorneous state.
   end
