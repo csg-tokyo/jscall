@@ -428,7 +428,7 @@ module Jscall
         end
 
         def dyn_import(name, var_name=nil)
-            funcall('Ruby.dyn_import', name, [var_name])
+            funcall('Ruby.dyn_import', name, var_name)
         end
 
         def method_missing(name, *args)
