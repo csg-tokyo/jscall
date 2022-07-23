@@ -335,64 +335,73 @@ module Jscall
             return cmd
         end
 
-        def send_command(cmd, message_id = nil)
-            cmd[1] ||= fresh_id
-            message_id ||= cmd[1]
+        def send_command(cmd)
+            message_id = (cmd[1] ||= fresh_id)
             json_data = JSON.generate(send_with_piggyback(cmd))
             @pipe.puts(json_data)
-            wait_for_reply(message_id)
+
+            while true
+                if @pending_replies.member?(message_id)
+                    result = @pending_replies.delete(message_id)
+                    if result.is_a?(JavaScriptError)
+                        raise result
+                    else
+                        return result
+                    end
+                end
+
+                reply_data = @pipe.gets
+                reply = JSON.parse(reply_data || '[]')
+                if reply.length > 5
+                    reply[5].each {|idx| @exported.remove(idx) }
+                    reply[5] = nil
+                end
+                if @pipe.closed?
+                    raise RuntimeError.new("connection closed: #{reply}")
+                elsif reply[0] == CMD_REPLY
+                    result = decode_obj(reply[2])
+                    if reply[1] != message_id
+                        @pending_replies[reply[1]] = result
+                    elsif result.is_a?(JavaScriptError)
+                        raise result
+                    else
+                        return result
+                    end
+                elsif reply[0] == CMD_EVAL
+                    begin
+                        result = Object::TOPLEVEL_BINDING.eval(reply[2])
+                        send_reply(reply[1], result)
+                    rescue => e
+                        send_error(reply[1], e)
+                    end
+                elsif reply[0] == CMD_CALL
+                    begin
+                        receiver = decode_obj(reply[2])
+                        name = reply[3]
+                        args = reply[4].map {|e| decode_obj(e)}
+                        result = receiver.public_send(name, *args)
+                        send_reply(reply[1], result)
+                    rescue => e
+                        send_error(reply[1], e)
+                    end
+                else
+                    raise RuntimeError.new("bad reply: #{reply}")
+                end
+            end
         end
 
-        def wait_for_reply(message_id)
-            if @pending_replies.member?(message_id)
-                result = @pending_replies.delete(message_id)
-                if result.is_a?(JavaScriptError)
-                    raise result
-                else
-                    return result
-                end
-            end
-
-            reply_data = @pipe.gets
-            reply = JSON.parse(reply_data || '[]')
-            if reply.length > 5
-                reply[5].each {|idx| @exported.remove(idx) }
-                reply[5] = nil
-            end
-            if @pipe.closed?
-                raise RuntimeError.new("connection closed: #{reply}")
-            elsif reply[0] == CMD_REPLY
-                result = decode_obj(reply[2])
-                if reply[1] != message_id
-                    @pending_replies[reply[1]] = result
-                    wait_for_reply(message_id)
-                elsif result.is_a?(JavaScriptError)
-                    raise result
-                else
-                    return result
-                end
-            elsif reply[0] == CMD_EVAL
-                begin
-                    result = Object::TOPLEVEL_BINDING.eval(reply[2])
-                    encoded = encode_obj(result)
-                rescue => e
-                    encoded = encode_eval_error(e)
-                end
-                send_command([CMD_REPLY, reply[1], encoded], message_id)
-            elsif reply[0] == CMD_CALL
-                begin
-                    receiver = decode_obj(reply[2])
-                    name = reply[3]
-                    args = reply[4].map {|e| decode_obj(e)}
-                    result = receiver.public_send(name, *args)
-                    encoded = encode_obj(result)
-                rescue => e
-                    encoded = encode_eval_error(e)
-                end
-                send_command([CMD_REPLY, reply[1], encoded], message_id)
+        def send_reply(message_id, value, erroneous = false)
+            if erroneous
+                encoded = encode_eval_error(value)
             else
-                raise RuntimeError.new("bad reply: #{reply}")
+                encoded = encode_obj(value)
             end
+            json_data = JSON.generate(send_with_piggyback([CMD_REPLY, message_id, encoded]))
+            @pipe.puts(json_data)
+        end
+
+        def send_error(message_id, e)
+            send_reply(message_id, e, true)
         end
     end
 
