@@ -143,7 +143,6 @@ class TestAsyncJscall < Minitest::Test
       i ** 3
     end)
     sleep(0.01) until Jscall.getResponses.length == 6
-    puts "js->ruby: #{ Jscall.getResponses.inspect }"
     Jscall.getResponses.each do |i, x|
       assert_equal i ** 3, x
     end
@@ -174,7 +173,6 @@ class TestAsyncJscall < Minitest::Test
       Jscall.sleepAndReturnCubic(i)
     end)
     sleep(0.01) until Jscall.getResponses2.length == 6
-    puts "ruby->js: #{ Jscall.getResponses2.inspect }"
     Jscall.getResponses2.each do |i, x|
       assert_equal i ** 3, x
     end
