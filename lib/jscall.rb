@@ -198,6 +198,7 @@ module Jscall
             @imported = Imported.new
             @send_counter = 0
             @num_generated_ids = 0
+            @pending_replies = {}
             module_names = config[:module_names] || []
             startJS(module_names, config)
         end
@@ -284,22 +285,22 @@ module Jscall
         end
 
         def funcall(receiver, name, args)
-            cmd = [CMD_CALL, fresh_id, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
+            cmd = [CMD_CALL, nil, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
             send_command(cmd)
         end
 
         def async_funcall(receiver, name, args)
-            cmd = [CMD_ASYNC_CALL, fresh_id, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
+            cmd = [CMD_ASYNC_CALL, nil, encode_obj(receiver), name, args.map {|e| encode_obj(e)}]
             send_command(cmd)
         end
 
         def exec(src)
-            cmd = [CMD_EVAL, fresh_id, src]
+            cmd = [CMD_EVAL, nil, src]
             send_command(cmd)
         end
 
         def async_exec(src)
-            cmd = [CMD_ASYNC_EVAL, fresh_id, src]
+            cmd = [CMD_ASYNC_EVAL, nil, src]
             send_command(cmd)
         end
 
@@ -334,20 +335,38 @@ module Jscall
             return cmd
         end
 
-        def send_command(cmd)
+        def send_command(cmd, message_id = nil)
+            cmd[1] ||= fresh_id
+            message_id ||= cmd[1]
             json_data = JSON.generate(send_with_piggyback(cmd))
             @pipe.puts(json_data)
+            wait_for_reply(message_id)
+        end
+
+        def wait_for_reply(message_id)
+            if @pending_replies.member?(message_id)
+                result = @pending_replies.delete(message_id)
+                if result.is_a?(JavaScriptError)
+                    raise result
+                else
+                    return result
+                end
+            end
+
             reply_data = @pipe.gets
             reply = JSON.parse(reply_data || '[]')
             if reply.length > 5
                 reply[5].each {|idx| @exported.remove(idx) }
+                reply[5] = nil
             end
             if @pipe.closed?
                 raise RuntimeError.new("connection closed: #{reply}")
             elsif reply[0] == CMD_REPLY
-                ## message_id = reply[1]  ## it must be nil
                 result = decode_obj(reply[2])
-                if result.is_a?(JavaScriptError)
+                if reply[1] != message_id
+                    @pending_replies[reply[1]] = result
+                    wait_for_reply(message_id)
+                elsif result.is_a?(JavaScriptError)
                     raise result
                 else
                     return result
@@ -359,7 +378,7 @@ module Jscall
                 rescue => e
                     encoded = encode_eval_error(e)
                 end
-                send_command([CMD_REPLY, reply[1], encoded])
+                send_command([CMD_REPLY, reply[1], encoded], message_id)
             elsif reply[0] == CMD_CALL
                 begin
                     receiver = decode_obj(reply[2])
@@ -370,7 +389,7 @@ module Jscall
                 rescue => e
                     encoded = encode_eval_error(e)
                 end
-                send_command([CMD_REPLY, reply[1], encoded])
+                send_command([CMD_REPLY, reply[1], encoded], message_id)
             else
                 raise RuntimeError.new("bad reply: #{reply}")
             end
