@@ -187,6 +187,9 @@ module Jscall
         Param_error = 3
         Param_hash = 4
 
+        Header_size = 6
+        Header_format = '%%0%dx' % Header_size
+
         @@node_cmd = 'node'
 
         def self.node_command=(cmd)
@@ -224,7 +227,7 @@ module Jscall
                 script2 += "import * as m#{i + 2} from \"#{module_names[i][1]}#{module_names[i][2]}\"; globalThis.#{module_names[i][0]} = m#{i + 2}; "
             end
             script2 += "import { createRequire } from \"node:module\"; globalThis.require = createRequire(\"file://#{Dir.pwd}/\");"
-            script = "'import * as m1 from \"#{__dir__}/jscall/main.mjs\"; globalThis.Ruby = m1; #{script2}; Ruby.start(new Ruby.LineReader(process.stdin), true)'"
+            script = "'import * as m1 from \"#{__dir__}/jscall/main.mjs\"; globalThis.Ruby = m1; #{script2}; Ruby.start(process.stdin, true)'"
             @pipe = IO.popen("#{@@node_cmd} #{options} --input-type 'module' -e #{script}", "r+t")
             @pipe.autoclose = true
         end
@@ -338,7 +341,8 @@ module Jscall
         def send_command(cmd)
             message_id = (cmd[1] ||= fresh_id)
             json_data = JSON.generate(send_with_piggyback(cmd))
-            @pipe.puts(json_data)
+            json_data_with_size = (Header_format % json_data.length) + json_data
+            @pipe.puts(json_data_with_size)
 
             while true
                 if @pending_replies.member?(message_id)
@@ -397,7 +401,8 @@ module Jscall
                 encoded = encode_obj(value)
             end
             json_data = JSON.generate(send_with_piggyback([CMD_REPLY, message_id, encoded]))
-            @pipe.puts(json_data)
+            json_data_with_size = (Header_format % json_data.length) + json_data
+            @pipe.puts(json_data_with_size)
         end
 
         def send_error(message_id, e)
