@@ -341,8 +341,12 @@ module Jscall
         def send_command(cmd)
             message_id = (cmd[1] ||= fresh_id)
             json_data = JSON.generate(send_with_piggyback(cmd))
-            json_data_with_size = (Header_format % json_data.length) + json_data
-            @pipe.puts(json_data_with_size)
+            header = (Header_format % json_data.length)
+            if header.length != Header_size
+                raise "message length limit exceeded"
+            end
+            json_data_with_header = header + json_data
+            @pipe.puts(json_data_with_header)
 
             while true
                 if @pending_replies.member?(message_id)
@@ -401,8 +405,12 @@ module Jscall
                 encoded = encode_obj(value)
             end
             json_data = JSON.generate(send_with_piggyback([CMD_REPLY, message_id, encoded]))
-            json_data_with_size = (Header_format % json_data.length) + json_data
-            @pipe.puts(json_data_with_size)
+            header = (Header_format % json_data.length)
+            if header.length != Header_size
+                raise "message length limit exceeded"
+            end
+            json_data_with_header = header + json_data
+            @pipe.puts(json_data_with_header)
         end
 
         def send_error(message_id, e)
