@@ -2,9 +2,8 @@
 
 require "benchmark"
 require "test_helper"
-require_relative 'test_async_jscall'
 
-class TestAsyncBrowser < TestAsyncJscall
+class TestAsyncBrowser < Minitest::Test
   def setup
     Jscall.config browser: true
     define_js_functions
