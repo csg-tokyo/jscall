@@ -206,9 +206,26 @@ for loading a CommonJS module.  For example,
 Jscall.exec "mime = require('./mime.js')"
 ```
 
-The file `./mime.js` is loaded and the module is bound to a global variable `mime`.
+The file `./mime.js` is loaded and the module is bound to a global variable `mime` in JavaScript.
 
-You may want to call `Jscall.dyn_import` in Ruby.
+You can directly call `require` on `Jscall` in Ruby.
+
+```
+parser = Jscall.require("@babel/parser")
+ast = parser.parse('const i = 3')
+Jscall.console.log(ast)
+```
+
+`require` will search `./node_modules/` for `@babel/parser`.
+This is equivalent to the following JavaScript code.
+
+```
+parser = require("@babel/parser")
+ast = parser.parse('const i = 3')
+console.log(ast)
+```
+
+Dynamic importing is also available.  Call `Jscall.dyn_import` in Ruby.
 
 ```
 fs = Jscall.dyn_import('fs')
