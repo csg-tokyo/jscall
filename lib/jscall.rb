@@ -87,10 +87,12 @@ module Jscall
     end
 
     class RemoteRef
-        attr_reader :id
-
         def initialize(id)
             @id = id
+        end
+
+        def __get_id
+            @id
         end
 
         def async
@@ -251,7 +253,7 @@ module Jscall
                 obj.each {|key, value| hash2[key] = encode_obj(value) }
                 [Param_hash, hash2]
             elsif obj.is_a?(RemoteRef)
-                [Param_local_object, obj.id]
+                [Param_local_object, obj.__get_id]
             else
                 [Param_object, @exported.export(obj)]
             end
