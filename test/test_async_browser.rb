@@ -3,14 +3,16 @@
 require "benchmark"
 require "test_helper"
 
-class TestAsyncJscall < Minitest::Test
+class TestAsyncBrowser < Minitest::Test
   def setup
-    Jscall.config
-    Jscall.config browser: false
+    Jscall.config browser: true
     define_js_functions
   end
 
   def define_js_functions
+    return if @js_functions_are_defined
+    @js_functions_are_defined = true
+
     Jscall.exec <<~JS
         function isPromise(obj) {
             return obj instanceof Promise
