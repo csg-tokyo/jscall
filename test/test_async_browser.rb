@@ -147,7 +147,7 @@ class TestAsyncBrowser < Minitest::Test
     end
   end
 
-  def test_asynchronous_callback_from_ruby_to_js
+  def dont_test_asynchronous_callback_from_ruby_to_js
     Jscall.exec <<~JS
       let responses2 = []
       function asynchronous_callback2(callback) {
