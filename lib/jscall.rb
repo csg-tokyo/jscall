@@ -182,6 +182,8 @@ module Jscall
         CMD_REPLY = 3
         CMD_ASYNC_CALL = 4
         CMD_ASYNC_EVAL = 5
+        CMD_RETRY = 6
+        CMD_REJECT = 7
 
         Param_array = 0
         Param_object = 1
@@ -351,15 +353,6 @@ module Jscall
             @pipe.puts(json_data_with_header)
 
             while true
-                if @pending_replies.member?(message_id)
-                    result = @pending_replies.delete(message_id)
-                    if result.is_a?(JavaScriptError)
-                        raise result
-                    else
-                        return result
-                    end
-                end
-
                 reply_data = @pipe.gets
                 reply = JSON.parse(reply_data || '[]')
                 if reply.length > 5
@@ -372,6 +365,7 @@ module Jscall
                     result = decode_obj(reply[2])
                     if reply[1] != message_id
                         @pending_replies[reply[1]] = result
+                        send_reply(reply[1], nil, false, CMD_REJECT)
                     elsif result.is_a?(JavaScriptError)
                         raise result
                     else
@@ -394,19 +388,33 @@ module Jscall
                     rescue => e
                         send_error(reply[1], e)
                     end
+                elsif reply[0] == CMD_RETRY
+                    if reply[1] != message_id
+                        send_reply(reply[1], nil, false, CMD_REJECT)
+                    else
+                        result = @pending_replies.delete(message_id)
+                        if result.nil?
+                            raise RuntimeError.new("bad CMD_RETRY: #{reply}")
+                        elsif result.is_a?(JavaScriptError)
+                            raise result
+                        else
+                            return result
+                        end
+                    end
                 else
-                    raise RuntimeError.new("bad reply: #{reply}")
+                    # CMD_REJECT and other unknown commands
+                    raise RuntimeError.new("bad message: #{reply}")
                 end
             end
         end
 
-        def send_reply(message_id, value, erroneous = false)
+        def send_reply(message_id, value, erroneous = false, cmd_id=CMD_REPLY)
             if erroneous
                 encoded = encode_eval_error(value)
             else
                 encoded = encode_obj(value)
             end
-            json_data = JSON.generate(send_with_piggyback([CMD_REPLY, message_id, encoded]))
+            json_data = JSON.generate(send_with_piggyback([cmd_id, message_id, encoded]))
             header = (Header_format % json_data.length)
             if header.length != Header_size
                 raise "message length limit exceeded"
