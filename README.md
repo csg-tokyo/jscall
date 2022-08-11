@@ -82,6 +82,17 @@ the `foo` function is executed with the argument `7`.
 Arguments and a return value are passed to/from a function
 as they are passed to/from a method.
 
+`Jscall` can be used for obtaining a remote reference to access a global variable
+in JavaScript.  For example,
+
+```
+Jscall.console.log('Hello')
+```
+
+This prints `Hello` on a JavaScript console.  `Jscall.console` returns a remote
+refererence to the value of `console` in JavaScript.  Then, `.log('Hello')`
+calls the `log` method on `console` in JavaScript.
+
 When a Ruby object is passed to a JavaScript function/method,
 you can call a method on the passed Ruby object.
 
