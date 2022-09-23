@@ -18,7 +18,7 @@ Jscall.exec '1 + 1'
 ```
 
 This returns `2`.  The argument passed to `Jscall.exec` can be
-multipe lines.  It is executed as source code written in JavaScript.
+multiple lines.  It is executed as source code written in JavaScript.
 
 `Jscall.exec` returns a resulting value.  Numbers, character strings (and symbols), boolean values, and `nil` (and `null`)
 are copied when passing between Ruby and JavaScript.  An array is shallow-copied.
@@ -64,7 +64,7 @@ when this ruby object is passed to JavaScript as an argument,
 a normal object `{ a: 2, b: 3 }` is created as its copy in JavaScript
 and passed to a JavaScript method.
 
-To call a JavaScript function from Ruby, call a mehtod on `Jscall`.
+To call a JavaScript function from Ruby, call a method on `Jscall`.
 For example,
 
 ```
@@ -90,7 +90,7 @@ Jscall.console.log('Hello')
 ```
 
 This prints `Hello` on a JavaScript console.  `Jscall.console` returns a remote
-refererence to the value of `console` in JavaScript.  Then, `.log('Hello')`
+reference to the value of `console` in JavaScript.  Then, `.log('Hello')`
 calls the `log` method on `console` in JavaScript.
 
 When a Ruby object is passed to a JavaScript function/method,
@@ -110,7 +110,7 @@ created in Ruby.
 Note that you must `await` every call to Ruby object since it is
 asynchronous call.
 
-In JavaScript, `Ruby.exec` is availale to run a program in Ruby.
+In JavaScript, `Ruby.exec` is available to run a program in Ruby.
 For example,
 
 ```
@@ -261,7 +261,7 @@ fs_module = await load('fs')
 ## Promise
 
 If a program attempts to pass a `Promise` object from JavaScript to Ruby,
-it waits until the promise is fullfilled.  Then Jscall passes
+it waits until the promise is fulfilled.  Then Jscall passes
 the value of that promise from JavaScript to Ruby instead of that
 promise itself (or a remote reference to that promise).  When that promise
 is rejected, an error object is passed to Ruby
@@ -270,7 +270,7 @@ This design reflects the fact that an `async` function in JavaScript
 also returns a `Promise` object but this object must not be returned
 to Ruby as is when that `async` function is called from Ruby.
 Jscall cannot determine whether a promise should be passed as is to Ruby
-or its value must be passed to Ruby after the promise is fullfilled.
+or its value must be passed to Ruby after the promise is fulfilled.
 
 When enforcing Jscall to pass a `Promise` object from JavaScript to Ruby,
 `.async` must be inserted between a receiver and a method name.
@@ -288,6 +288,27 @@ prom = obj.async.a            # promise
 prom.then(->(r) { puts r })   # 7
 ```
 
+## Synchronous calls
+
+You might want to avoid writing `await` when you call a method on a Ruby
+object or you execute Ruby code by `Ruby.exec` from JavaScript.
+For example, that call is included in library code and you might not
+be able to modify the library code so that `await` will be inserted.
+
+Jscall supports synchronous calls from JavaScript to Ruby only when
+the underlying JavaScript engine is node.js on Linux.
+In the mode of synchronous calls, you do not have to `await` a method call
+on a Ruby object or a call to `Ruby.exec`.
+It blocks until the return value comes back from Ruby.
+While it blocks, all calls from Ruby to JavaScript are
+synchronously processed.
+
+To change to the mode of synchronous calls,
+call `Jscall.config`:
+
+```
+Jscall.config(sync: true)
+```
 
 ## Configuration
 
@@ -348,12 +369,26 @@ Passing `true` for `browser:` switches the execution engine to a web browser.
 The default engine is node.js.
 To switch the engine back to node.js, pass `false` for `browser:`.
 Call `Jscall.close` to detach the current execution engine.
-A new enigine with a new configuration will be created.
+A new engine with a new configuration will be created.
 
 `port:` specifies the port number of an http server.  It is optional.
 The example above specifies that Ruby receives http requests
 sent to http://localhost:10082 from JavaScript on a web browser.
 
+
+### Misc.
+
+To change to the mode of synchronous calls,
+
+```
+Jscall.config(sync: true)
+```
+
+To set all the configurations to the default ones,
+
+```
+Jscall.config()
+```
 
 ### Other configurations
 
@@ -415,7 +450,7 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/csg-to
 
 The gem is available as open source under the terms of the [MIT License](http://opensource.org/licenses/MIT).
 
-## Acknowledgement
+## Acknowledgment
 
 The icon image for jscall was created by partly using the Ruby logo, which was obtained
 from https://www.ruby-lang.org/en/about/logo/ under CC BY-SA 2.5.

@@ -231,7 +231,8 @@ module Jscall
                 script2 += "import * as m#{i + 2} from \"#{module_names[i][1]}#{module_names[i][2]}\"; globalThis.#{module_names[i][0]} = m#{i + 2}; "
             end
             script2 += "import { createRequire } from \"node:module\"; globalThis.require = createRequire(\"file://#{Dir.pwd}/\");"
-            script = "'import * as m1 from \"#{__dir__}/jscall/main.mjs\"; globalThis.Ruby = m1; #{script2}; Ruby.start(process.stdin, true)'"
+            main_js_file = if config[:sync] then "synch.mjs" else "main.mjs" end
+            script = "'import * as m1 from \"#{__dir__}/jscall/#{main_js_file}\"; globalThis.Ruby = m1; #{script2}; Ruby.start(process.stdin, true)'"
             @pipe = IO.popen("#{@@node_cmd} #{options} --input-type 'module' -e #{script}", "r+t")
             @pipe.autoclose = true
         end
@@ -432,7 +433,7 @@ module Jscall
     @configurations = {}
     @pipeToJsClass = PipeToJs
 
-    #def self.config(module_names: [], options: '', browser: false)
+    #def self.config(module_names: [], options: '', browser: false, sync: false)
     def self.config(**kw)
         if kw.nil? || kw == {}
             @configurations = {}

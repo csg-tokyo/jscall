@@ -251,6 +251,10 @@ CODE
       function make_many_objects(ruby) {
         return { a: 3, b: 'foo', c: Array(1000) }
       }
+      function make_many_objects2(ruby) {
+        const rubyobj = Ruby.exec('Array.new(10, 1)')
+        return { a: 3, b: 'foo', c: Array(1000), d: rubyobj }
+      }
       function num_exported_objects() {
         const ex_im = Ruby.get_exported_imported()
         let sum = 0
@@ -268,7 +272,16 @@ CODE
     n.times do |i|
       assert Jscall.make_many_objects(Many.new).is_a?(Jscall::RemoteRef)
     end
-    assert   Jscall.num_exported_objects < node_refs + n
+    assert Jscall.num_exported_objects < node_refs + n
+    assert get_exported_objects < nrefs + n
+
+    nrefs = get_exported_objects
+    node_refs = Jscall.num_exported_objects
+    n = 10000
+    n.times do |i|
+      assert Jscall.make_many_objects2(Many.new).is_a?(Jscall::RemoteRef)
+    end
+    assert Jscall.num_exported_objects < node_refs + n
     assert get_exported_objects < nrefs + n
   end
 
