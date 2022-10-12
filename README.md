@@ -392,6 +392,22 @@ Jscall.config()
 
 ### Other configurations
 
+To obtain more detailed error messages,
+set a debugging level to 10.
+In Ruby,
+
+```
+Jscall.debug = 10
+```
+
+In JavaScript,
+
+```
+Ruby.setDebugLevel(10)
+```
+
+The default debugging level is 0.
+
 To change the name of the node command,
 
 ```
