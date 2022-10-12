@@ -393,13 +393,15 @@ module Jscall
                     if reply[1] != message_id
                         send_reply(reply[1], nil, false, CMD_REJECT)
                     else
-                        result = @pending_replies.delete(message_id)
-                        if result.nil?
-                            raise RuntimeError.new("bad CMD_RETRY: #{reply}")
-                        elsif result.is_a?(JavaScriptError)
-                            raise result
+                        if @pending_replies.key?(message_id)
+                            result = @pending_replies.delete(message_id)
+                            if result.is_a?(JavaScriptError)
+                                raise result
+                            else
+                                return result
+                            end
                         else
-                            return result
+                            raise RuntimeError.new("bad CMD_RETRY: #{reply}")
                         end
                     end
                 else
