@@ -110,6 +110,11 @@ created in Ruby.
 Note that you must `await` every call to Ruby object since it is
 asynchronous call.
 
+A shorthand for `obj.to_a()` is `obj.to_a` in Ruby.  However,
+this shorthand is not available in JavaScript.
+You must explicitly write `obj.to_a()`
+in JavaScript when `obj` is a Ruby object.
+
 In JavaScript, `Ruby.exec` is available to run a program in Ruby.
 For example,
 
