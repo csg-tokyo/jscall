@@ -102,7 +102,7 @@ Jscall.exec <<CODE
     return await obj.to_a()
   }
 CODE
-Jscall.foo((1..3))    # [], 2, 3]
+Jscall.foo((1..3))    # [1, 2, 3]
 ```
 
 Here, `obj.to_a()` calls the `to_a` method on a `Range` object
