@@ -1,0 +1,16 @@
+body {
+    font-family: 'Arial', sans-serif;
+    font-size: 16px;
+}
+
+input {
+    font-family: 'Arial', sans-serif;
+    font-size: 16px;
+    border-radius: 3px;
+    border: 2px solid #ddd;
+}
+
+button {
+    font-family: 'Arial', sans-serif;
+    font-size: 16px;
+}
