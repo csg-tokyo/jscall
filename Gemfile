@@ -5,7 +5,7 @@ source "https://rubygems.org"
 # Specify your gem's dependencies in jscall.gemspec
 gemspec
 
-gem "webrick", "~> 1.4"
+gem "webrick", "~> 1.7.0"
 
 gem "rake", "~> 13.0"
 
